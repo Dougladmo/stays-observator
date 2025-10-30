@@ -9,6 +9,9 @@ export interface Guest {
   checkInDate?: string;
   checkOutDate?: string;
   nights?: number;
+  guestCount?: number;
+  platform?: string;
+  platformImage?: string;
 }
 
 export interface DayData {

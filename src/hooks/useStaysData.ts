@@ -15,10 +15,6 @@ import {
   getDateRange,
   isWithinNextDays,
 } from '@/services/api/transformers';
-import {
-  mockDashboardData,
-  mockReservationOrigins,
-} from '@/components/Dashboard/mockData';
 
 export interface UseStaysDataResult {
   /** Week data for the dashboard (7 days) */
@@ -120,15 +116,15 @@ export function useStaysData(): UseStaysDataResult {
     : [];
 
   return {
-    // Guest data still uses mock data since API doesn't provide reservation details
-    weekData: mockDashboardData,
+    // Note: This hook is deprecated. Use useBookingData for complete reservation data.
+    weekData: [],
 
     // Occupancy statistics from API
     occupancyStats,
     occupancyNext30Days,
 
-    // Reservation origins still use mock data (not available in calendar API)
-    reservationOrigins: mockReservationOrigins,
+    // Reservation origins (empty - use useBookingData instead)
+    reservationOrigins: [],
 
     // Occupancy trend from API
     occupancyTrend,

@@ -124,6 +124,17 @@ class StaysBookingApiClient {
 
     return allBookings;
   }
+
+  /**
+   * Retrieves detailed information for a specific booking
+   * This endpoint returns complete guest details including guest list and partner info
+   * @param reservationId - The booking ID (e.g., "CJ01G")
+   */
+  async getBookingDetails(reservationId: string): Promise<StaysBooking> {
+    return this.get<StaysBooking>(
+      `/external/v1/booking/reservations/${reservationId}`
+    );
+  }
 }
 
 // Export singleton instance

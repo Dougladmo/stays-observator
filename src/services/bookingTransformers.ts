@@ -5,6 +5,7 @@
 
 import type { StaysBooking, GuestStatus } from './api/bookingTypes';
 import type { DayData, Guest, OccupancyStats, ReservationOrigin } from '@/components/Dashboard/types';
+import { extractGuestInfo } from './bookingDetailsExtractor';
 
 /**
  * Date formatting utilities
@@ -60,23 +61,12 @@ export function bookingToGuest(booking: StaysBooking, status: GuestStatus): Gues
   // Calculate nights as fallback if not provided by API
   const nights = booking.stats?.nights || calculateNights(booking.checkInDate, booking.checkOutDate);
 
-  // Try multiple possible field names for guest name
-  const guestName = booking.guestsDetails?.name
-    || (booking as any).guestName
-    || (booking as any).clientName
-    || (booking as any).guest?.name;
+  // Extract guest name, platform, and image
+  const { guestName, platform, platformImage } = extractGuestInfo(booking);
 
-  // Debug log to see what the API is returning
-  if (!guestName || !nights) {
-    console.log('Booking data:', {
-      id: booking.id,
-      guestsDetails: booking.guestsDetails,
-      stats: booking.stats,
-      checkIn: booking.checkInDate,
-      checkOut: booking.checkOutDate,
-      calculatedNights: calculateNights(booking.checkInDate, booking.checkOutDate)
-    });
-  }
+  // Get guest count (total number of guests)
+  const guestCount = booking.guests ||
+    (booking.stats ? (booking.stats.adults || 0) + (booking.stats.children || 0) + (booking.stats.babies || 0) : 0);
 
   return {
     id: booking._id,
@@ -87,6 +77,9 @@ export function bookingToGuest(booking: StaysBooking, status: GuestStatus): Gues
     checkInDate: booking.checkInDate,
     checkOutDate: booking.checkOutDate,
     nights,
+    guestCount,
+    platform,
+    platformImage,
   };
 }
 

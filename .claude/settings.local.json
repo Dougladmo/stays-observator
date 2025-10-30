@@ -23,7 +23,8 @@
       "Bash(del tailwind.config.js)",
       "Bash(if exist tailwind.config.js del tailwind.config.js)",
       "Bash(curl:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []

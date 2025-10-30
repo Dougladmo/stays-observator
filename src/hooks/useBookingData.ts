@@ -17,6 +17,7 @@ import {
   getAvailableUnits,
   getDateRange,
 } from '../services/bookingTransformers';
+import { enrichBookingsWithDetails } from '../services/bookingDetailsCache';
 
 export interface UseBookingDataResult {
   /** Week data for the dashboard (7 days) */
@@ -39,6 +40,10 @@ export interface UseBookingDataResult {
   configValid: boolean;
   /** Refetch data manually */
   refetch: () => Promise<void>;
+  /** Counter for new checkin reservations (triggers celebration) */
+  newCheckinCount: number;
+  /** Last new checkin booking details */
+  lastNewCheckin: StaysBooking | null;
 }
 
 /**
@@ -54,6 +59,8 @@ export function useBookingData(): UseBookingDataResult {
   const [bookings, setBookings] = useState<StaysBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [newCheckinCount, setNewCheckinCount] = useState(0);
+  const [lastNewCheckin, setLastNewCheckin] = useState<StaysBooking | null>(null);
 
   // Validate configuration (only client credentials needed, no listing IDs)
   const configValidation = validateConfig();
@@ -81,10 +88,32 @@ export function useBookingData(): UseBookingDataResult {
       const today = new Date();
       const { from, to } = getDateRange(today, 37);
 
+      console.log('📥 Fetching basic bookings list...');
       // Get all bookings with automatic pagination
-      const allBookings = await staysBookingApi.getAllBookings(from, to, 'included');
+      const basicBookings = await staysBookingApi.getAllBookings(from, to, 'included');
 
-      setBookings(allBookings);
+      console.log(`🔍 Enriching ${basicBookings.length} bookings with detailed information...`);
+      // Enrich bookings with detailed information (guest names, platform info)
+      const enrichedBookings = await enrichBookingsWithDetails(basicBookings, 10);
+
+      // Detect new checkin reservations
+      if (bookings.length > 0) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const oldCheckins = bookings.filter(b => b.checkInDate === todayStr).map(b => b._id);
+        const newCheckins = enrichedBookings.filter(b =>
+          b.checkInDate === todayStr && !oldCheckins.includes(b._id)
+        );
+
+        if (newCheckins.length > 0) {
+          console.log(`🎉 ${newCheckins.length} nova(s) reserva(s) de check-in detectada(s)!`);
+          setNewCheckinCount(prev => prev + newCheckins.length);
+          // Store the last new checkin for popup display
+          setLastNewCheckin(newCheckins[newCheckins.length - 1]);
+        }
+      }
+
+      console.log('✅ Bookings enriched successfully!');
+      setBookings(enrichedBookings);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar dados da API Stays Booking';
       setError(errorMessage);
@@ -96,6 +125,37 @@ export function useBookingData(): UseBookingDataResult {
 
   useEffect(() => {
     fetchData();
+
+    // Timer 1: Atualização à meia-noite para mudar os dias da semana
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const msUntilMidnight = midnight.getTime() - now.getTime();
+
+    const midnightTimer = setTimeout(() => {
+      console.log('🌙 Meia-noite detectada! Atualizando dashboard...');
+      fetchData();
+
+      // Após primeira atualização, repetir a cada 24h
+      const dailyInterval = setInterval(() => {
+        console.log('🌙 Atualização diária automática');
+        fetchData();
+      }, 24 * 60 * 60 * 1000);
+
+      return () => clearInterval(dailyInterval);
+    }, msUntilMidnight);
+
+    // Timer 2: Atualização periódica para capturar novas reservas (a cada 5 minutos)
+    const periodicInterval = setInterval(() => {
+      console.log('🔄 Atualização periódica - buscando novas reservas');
+      fetchData();
+    }, 5 * 60 * 1000); // 5 minutos
+
+    // Cleanup dos timers
+    return () => {
+      clearTimeout(midnightTimer);
+      clearInterval(periodicInterval);
+    };
   }, []);
 
   // Get today's date for calculations
@@ -143,5 +203,7 @@ export function useBookingData(): UseBookingDataResult {
     error,
     configValid: configValidation.valid,
     refetch: fetchData,
+    newCheckinCount,
+    lastNewCheckin,
   };
 }

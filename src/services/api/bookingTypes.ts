@@ -36,6 +36,24 @@ export interface BookingStats {
 }
 
 /**
+ * Individual guest in the guests list
+ */
+export interface GuestListItem {
+  name: string;
+  email?: string;
+  primary?: boolean;
+  type?: 'adult' | 'child' | 'baby';
+}
+
+/**
+ * Partner/Platform information
+ */
+export interface Partner {
+  id: string;
+  name: string;
+}
+
+/**
  * Guest details information
  */
 export interface GuestsDetails {
@@ -47,6 +65,9 @@ export interface GuestsDetails {
   city?: string;
   country?: string;
   notes?: string;
+  adults?: number;
+  children?: number;
+  list?: GuestListItem[];
 }
 
 /**
@@ -70,6 +91,7 @@ export interface StaysBooking {
   source?: string;
   channelName?: string;
   status?: string;
+  partner?: Partner;
 }
 
 /**
