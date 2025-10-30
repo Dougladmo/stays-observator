@@ -5,11 +5,11 @@ export default function Navigation() {
   const location = useLocation();
 
   return (
-    <nav className="sticky top-0 z-[100] h-[4vh] shrink-0 bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-md">
+    <nav className="sticky top-0 z-50 h-[4vh] bg-[#667eea] shadow-md">
       <div className="mx-auto flex h-full max-w-full items-center justify-between px-[2vw]">
         <div className="flex items-center">
           <h1 className="m-0 text-[clamp(14px,1.5vh,18px)] font-bold tracking-tight text-white">
-            Stays Observator
+            Dashboard Hóspedes
           </h1>
         </div>
         <div className="flex gap-[0.5vw]">

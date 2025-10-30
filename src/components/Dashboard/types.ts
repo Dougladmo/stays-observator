@@ -5,6 +5,10 @@ export interface Guest {
   code: string;
   unit: string;
   status: GuestStatus;
+  guestName?: string;
+  checkInDate?: string;
+  checkOutDate?: string;
+  nights?: number;
 }
 
 export interface DayData {

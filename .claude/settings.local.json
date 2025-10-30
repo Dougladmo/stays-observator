@@ -21,7 +21,9 @@
       "Bash(taskkill:*)",
       "Bash(if exist \"C:\\Users\\Douglas Moura\\Documents\\GitHub\\stays-observator\\node_modules\\.vite\" rmdir /s /q \"C:\\Users\\Douglas Moura\\Documents\\GitHub\\stays-observator\\node_modules\\.vite\")",
       "Bash(del tailwind.config.js)",
-      "Bash(if exist tailwind.config.js del tailwind.config.js)"
+      "Bash(if exist tailwind.config.js del tailwind.config.js)",
+      "Bash(curl:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []
