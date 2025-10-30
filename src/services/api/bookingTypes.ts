@@ -54,6 +54,16 @@ export interface Partner {
 }
 
 /**
+ * Listing/Property information
+ */
+export interface Listing {
+  _id: string;
+  internalName?: string;
+  name?: string;
+  address?: string;
+}
+
+/**
  * Guest details information
  */
 export interface GuestsDetails {
@@ -92,6 +102,7 @@ export interface StaysBooking {
   channelName?: string;
   status?: string;
   partner?: Partner;
+  listing?: Listing;
 }
 
 /**

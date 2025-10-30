@@ -68,9 +68,16 @@ export function bookingToGuest(booking: StaysBooking, status: GuestStatus): Gues
   const guestCount = booking.guests ||
     (booking.stats ? (booking.stats.adults || 0) + (booking.stats.children || 0) + (booking.stats.babies || 0) : 0);
 
+  // Use apartment code (internalName) if available, fallback to booking ID
+  // Extract only the part before the pipe "|" if it exists
+  const internalName = booking.listing?.internalName;
+  const displayCode = internalName
+    ? internalName.split('|')[0].trim()
+    : booking.id;
+
   return {
     id: booking._id,
-    code: booking.id, // Guest code like "STA-7767"
+    code: displayCode, // Apartment code like "I-VP-455-503" or fallback to booking ID
     unit: booking._idlisting, // Using listing ID as unit identifier
     status,
     guestName,
@@ -252,11 +259,26 @@ export function calculateOccupancyTrend(
 
 /**
  * Gets list of available (empty) units on a specific date
+ * Returns apartment codes (internalName) when available
  */
 export function getAvailableUnits(
   bookings: StaysBooking[],
   targetDate: string
 ): string[] {
+  // Create a map of listing ID to internalName (apartment code)
+  const listingIdToName = new Map<string, string>();
+  bookings.forEach(booking => {
+    if (booking._idlisting) {
+      // Use internalName if available, otherwise use listing ID
+      // Extract only the part before the pipe "|" if it exists
+      const internalName = booking.listing?.internalName;
+      const name = internalName
+        ? internalName.split('|')[0].trim()
+        : booking._idlisting;
+      listingIdToName.set(booking._idlisting, name);
+    }
+  });
+
   const allListings = new Set(bookings.map((b) => b._idlisting));
   const occupiedListings = new Set<string>();
 
@@ -267,7 +289,10 @@ export function getAvailableUnits(
     }
   }
 
-  return Array.from(allListings).filter((listing) => !occupiedListings.has(listing));
+  // Return apartment codes for available units
+  return Array.from(allListings)
+    .filter((listing) => !occupiedListings.has(listing))
+    .map((listing) => listingIdToName.get(listing) || listing);
 }
 
 /**

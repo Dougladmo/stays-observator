@@ -47,18 +47,18 @@ export const PLATFORM_IMAGES: Record<string, PlatformImageConfig> = {
     imagePath: '/images/platforms/direct.png', // TODO: Add image
     alt: 'Reserva Direta',
   },
-
-  // // Additional platforms (for future use)
-  // 'API expedia': {
-  //   name: 'Expedia',
-  //   imagePath: '/images/platforms/expedia.png', // TODO: Add image
-  //   alt: 'Expedia',
-  // },
-  // 'API vrbo': {
-  //   name: 'VRBO',
-  //   imagePath: '/images/platforms/vrbo.png', // TODO: Add image
-  //   alt: 'VRBO',
-  // },
+  // Additional platforms (for future use)
+  'API expedia': {
+    name: 'Expedia',
+    imagePath: '/images/platforms/expedia.png', // TODO: Add image
+    alt: 'Expedia',
+  },
+  'API vrbo': {
+    name: 'VRBO',
+    imagePath: '/images/platforms/vrbo.png', // TODO: Add image
+    alt: 'VRBO',
+  },
+  
   // 'API homeaway': {
   //   name: 'HomeAway',
   //   imagePath: '/images/platforms/homeaway.png', // TODO: Add image

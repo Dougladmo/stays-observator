@@ -19,19 +19,14 @@ function GuestCard({ guest }: { guest: Guest }) {
     checkout: 'bg-[#e74c3c]',
   };
 
-  // Format date from YYYY-MM-DD to DD/MM
+  // Format date from YYYY-MM-DD to DD/MMM (ex: 30/out)
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
-    const [, month, day] = dateStr.split('-');
+    const date = new Date(dateStr + 'T00:00:00');
+    const day = date.getDate();
+    const month = date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
     return `${day}/${month}`;
   };
-
-  // Log platform information for debugging
-  console.log(`📋 Guest ${guest.code}:`, {
-    guestName: guest.guestName,
-    platform: guest.platform,
-    platformImage: guest.platformImage,
-  });
 
   return (
     <div className={cn(
@@ -40,35 +35,32 @@ function GuestCard({ guest }: { guest: Guest }) {
       'h-auto'
     )}>
       <div className="flex items-start justify-between gap-1">
-        <div className="text-[clamp(14px,1.1vh,13px)] font-bold overflow-hidden text-ellipsis whitespace-nowrap flex-1">
+        <div className="text-[clamp(12px,1.1vh,13px)] font-bold overflow-hidden  flex-1">
           {guest.code}
         </div>
-        {guest.platformImage && (
-          <img
-            src={guest.platformImage}
-            alt={guest.platform || 'Plataforma'}
-            title={guest.platform || 'Plataforma'}
-            className="w-[clamp(25px,1.4vh,18px)] h-[clamp(24px,1.4vh,18px)] object-contain shrink-0"
-          />
-        )}
+        
       </div>
       <div className="text-[clamp(11px,0.9vh,11px)] leading-snug opacity-90 overflow-hidden text-ellipsis whitespace-nowrap">
         {guest.guestName || 'Sem nome'}
       </div>
       <div className="text-[clamp(10px,0.85vh,10px)] leading-snug opacity-80 overflow-hidden text-ellipsis whitespace-nowrap">
-        Entrada: {formatDate(guest.checkInDate)}
-      </div>
-      <div className="text-[clamp(10px,0.85vh,10px)] leading-snug opacity-80 overflow-hidden text-ellipsis whitespace-nowrap">
-        Saída: {formatDate(guest.checkOutDate)}
+        {formatDate(guest.checkInDate)} → {formatDate(guest.checkOutDate)}
+        
       </div>
       <div className="text-[clamp(10px,0.85vh,10px)] leading-snug opacity-80 overflow-hidden text-ellipsis whitespace-nowrap">
         {guest.nights || 0} {guest.nights === 1 ? 'noite' : 'noites'}
+        {guest.guestCount !== undefined && guest.guestCount > 0 && (
+          <> | {guest.guestCount} hosp</>
+        )}
+        {guest.platformImage && (
+          <img
+            src={guest.platformImage}
+            alt={guest.platform || 'Plataforma'}
+            title={guest.platform || 'Plataforma'}
+            className="w-[clamp(22px,1.4vh,16px)] absolute right-1 bottom-1 h-[clamp(22px,1.4vh,18px)] object-contain shrink-0"
+          />
+        )}
       </div>
-      {guest.guestCount !== undefined && guest.guestCount > 0 && (
-        <div className="text-[clamp(10px,0.85vh,10px)] opacity-80 overflow-hidden text-ellipsis whitespace-nowrap">
-          {guest.guestCount} {guest.guestCount === 1 ? 'hóspede' : 'hóspedes'}
-        </div>
-      )}
     </div>
   );
 }

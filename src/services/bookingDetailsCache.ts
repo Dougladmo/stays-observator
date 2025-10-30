@@ -5,6 +5,7 @@
 
 import type { StaysBooking } from './api/bookingTypes';
 import { staysBookingApi } from './staysBookingApi';
+import { staysContentApi, type ListingDetails } from './staysContentApi';
 
 /**
  * Cache entry structure
@@ -33,12 +34,9 @@ class BookingDetailsCache {
 
     // Return cached data if valid
     if (cached && now - cached.timestamp < this.cacheDuration) {
-      console.log(`📦 Cache hit for reservation ${reservationId}`);
       return cached.data;
     }
 
-    // Fetch from API
-    console.log(`🌐 Fetching details from API for reservation ${reservationId}`);
     const details = await staysBookingApi.getBookingDetails(reservationId);
 
     // Store in cache
@@ -89,6 +87,94 @@ class BookingDetailsCache {
 export const bookingDetailsCache = new BookingDetailsCache();
 
 /**
+ * Cache entry structure for listing details
+ */
+interface ListingCacheEntry {
+  data: ListingDetails;
+  timestamp: number;
+}
+
+/**
+ * Listing details cache manager
+ * Implements in-memory cache with TTL for listing/apartment information
+ */
+class ListingDetailsCache {
+  private cache: Map<string, ListingCacheEntry> = new Map();
+  private readonly cacheDuration: number = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Gets listing details from cache or fetches from Content API
+   * @param listingId - Listing ID (from booking._idlisting)
+   * @returns Complete listing details including internalName
+   */
+  async getDetails(listingId: string): Promise<ListingDetails | null> {
+    if (!listingId) {
+      return null;
+    }
+
+    const now = Date.now();
+    const cached = this.cache.get(listingId);
+
+    // Return cached data if valid
+    if (cached && now - cached.timestamp < this.cacheDuration) {
+      return cached.data;
+    }
+
+    try {
+      const details = await staysContentApi.getListingDetails(listingId);
+
+      // Store in cache
+      this.cache.set(listingId, {
+        data: details,
+        timestamp: now,
+      });
+
+      return details;
+    } catch (error) {
+      console.error(`❌ Error fetching listing details for ${listingId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Clears the entire cache
+   */
+  clear(): void {
+    this.cache.clear();
+    console.log('🗑️ Listing cache cleared');
+  }
+
+  /**
+   * Removes expired entries from cache
+   */
+  cleanup(): void {
+    const now = Date.now();
+    let removed = 0;
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp >= this.cacheDuration) {
+        this.cache.delete(key);
+        removed++;
+      }
+    }
+
+    if (removed > 0) {
+      console.log(`🧹 Removed ${removed} expired listing cache entries`);
+    }
+  }
+
+  /**
+   * Gets current cache size
+   */
+  getSize(): number {
+    return this.cache.size;
+  }
+}
+
+// Singleton instance
+export const listingDetailsCache = new ListingDetailsCache();
+
+/**
  * Fetches booking details in batches to avoid overwhelming the API
  * @param reservationIds - Array of booking IDs
  * @param batchSize - Number of concurrent requests
@@ -109,9 +195,6 @@ export async function fetchBookingDetailsInBatches(
 
   for (let i = 0; i < reservationIds.length; i += batchSize) {
     const batch = reservationIds.slice(i, i + batchSize);
-    const batchNumber = Math.floor(i / batchSize) + 1;
-
-    console.log(`📥 Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`);
 
     // Fetch all bookings in current batch in parallel
     const batchResults = await Promise.all(
@@ -134,7 +217,6 @@ export async function fetchBookingDetailsInBatches(
 
     // Wait between batches (except for the last one)
     if (i + batchSize < reservationIds.length) {
-      console.log(`⏳ Waiting ${delayMs}ms before next batch...`);
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
@@ -148,10 +230,10 @@ export async function fetchBookingDetailsInBatches(
 }
 
 /**
- * Enriches basic bookings with detailed information
+ * Enriches basic bookings with detailed information including apartment codes
  * @param basicBookings - Array of basic bookings from list endpoint
  * @param batchSize - Number of concurrent requests
- * @returns Array of bookings with complete details
+ * @returns Array of bookings with complete details and internalName
  */
 export async function enrichBookingsWithDetails(
   basicBookings: StaysBooking[],
@@ -160,17 +242,84 @@ export async function enrichBookingsWithDetails(
   // Extract reservation IDs
   const reservationIds = basicBookings.map((booking) => booking.id);
 
-  // Fetch details in batches
+  // Step 1: Fetch booking details in batches
+  console.log('📥 Step 1: Fetching booking details...');
   const detailedBookings = await fetchBookingDetailsInBatches(reservationIds, batchSize);
 
   // Create a map for quick lookup
   const detailsMap = new Map(detailedBookings.map((booking) => [booking.id, booking]));
 
   // Merge basic bookings with detailed information
-  return basicBookings.map((basicBooking) => {
+  const enrichedWithDetails = basicBookings.map((basicBooking) => {
     const details = detailsMap.get(basicBooking.id);
-
-    // If details were fetched successfully, use them; otherwise keep basic booking
     return details || basicBooking;
   });
+
+  // Step 2: Fetch listing details (apartment codes) in batches
+  console.log('🏠 Step 2: Fetching apartment codes from Content API...');
+
+  // Get unique listing IDs
+  const uniqueListingIds = new Set<string>();
+  enrichedWithDetails.forEach(booking => {
+    if (booking._idlisting) {
+      uniqueListingIds.add(booking._idlisting);
+    }
+  });
+
+  console.log(`🔍 Found ${uniqueListingIds.size} unique listings to fetch`);
+
+  // Fetch all listing details in parallel (with some batching to avoid overwhelming the API)
+  const listingIds = Array.from(uniqueListingIds);
+  const listingDetailsPromises: Promise<[string, ListingDetails | null]>[] = [];
+
+  for (let i = 0; i < listingIds.length; i += batchSize) {
+    const batch = listingIds.slice(i, i + batchSize);
+
+    const batchPromises = batch.map(async (listingId): Promise<[string, ListingDetails | null]> => {
+      const details = await listingDetailsCache.getDetails(listingId);
+      return [listingId, details];
+    });
+
+    listingDetailsPromises.push(...batchPromises);
+
+    // Small delay between batches to avoid rate limiting
+    if (i + batchSize < listingIds.length) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
+
+  const listingDetailsResults = await Promise.all(listingDetailsPromises);
+  const listingDetailsMap = new Map(listingDetailsResults);
+
+  console.log(`✅ Fetched ${listingDetailsResults.filter(([, details]) => details !== null).length}/${uniqueListingIds.size} listing details`);
+
+  // Step 3: Enrich bookings with listing information
+  const fullyEnrichedBookings = enrichedWithDetails.map(booking => {
+    if (!booking._idlisting) {
+      return booking;
+    }
+
+    const listingDetails = listingDetailsMap.get(booking._idlisting);
+
+    if (listingDetails) {
+      // Add or update the listing object with internalName
+      return {
+        ...booking,
+        listing: {
+          _id: listingDetails._id,
+          internalName: listingDetails.internalName,
+          name: listingDetails.name,
+          address: listingDetails.address,
+        }
+      };
+    }
+
+    return booking;
+  });
+
+  // Cleanup expired cache entries
+  bookingDetailsCache.cleanup();
+  listingDetailsCache.cleanup();
+
+  return fullyEnrichedBookings;
 }

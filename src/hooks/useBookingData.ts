@@ -88,11 +88,9 @@ export function useBookingData(): UseBookingDataResult {
       const today = new Date();
       const { from, to } = getDateRange(today, 37);
 
-      console.log('📥 Fetching basic bookings list...');
       // Get all bookings with automatic pagination
       const basicBookings = await staysBookingApi.getAllBookings(from, to, 'included');
 
-      console.log(`🔍 Enriching ${basicBookings.length} bookings with detailed information...`);
       // Enrich bookings with detailed information (guest names, platform info)
       const enrichedBookings = await enrichBookingsWithDetails(basicBookings, 10);
 
@@ -105,14 +103,12 @@ export function useBookingData(): UseBookingDataResult {
         );
 
         if (newCheckins.length > 0) {
-          console.log(`🎉 ${newCheckins.length} nova(s) reserva(s) de check-in detectada(s)!`);
           setNewCheckinCount(prev => prev + newCheckins.length);
           // Store the last new checkin for popup display
           setLastNewCheckin(newCheckins[newCheckins.length - 1]);
         }
       }
 
-      console.log('✅ Bookings enriched successfully!');
       setBookings(enrichedBookings);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar dados da API Stays Booking';

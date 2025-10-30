@@ -65,6 +65,26 @@ export function extractPlatform(booking: StaysBooking): string {
 }
 
 /**
+ * Extracts the property/unit internal name from booking details
+ * @param booking - Complete booking details
+ * @returns Unit internal name or undefined if not found
+ */
+export function extractUnitName(booking: StaysBooking): string | undefined {
+  // Check if listing information is available
+  if (booking.listing?.internalName) {
+    return booking.listing.internalName;
+  }
+
+  // Fallback to name field
+  if (booking.listing?.name) {
+    return booking.listing.name;
+  }
+
+  // If no listing info, return undefined (will use unit ID as fallback)
+  return undefined;
+}
+
+/**
  * Extracts all guest-related information from booking details
  * Convenience function that combines all extraction methods
  * @param booking - Complete booking details

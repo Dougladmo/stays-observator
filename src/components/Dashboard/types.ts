@@ -4,6 +4,7 @@ export interface Guest {
   id: string;
   code: string;
   unit: string;
+  unitName?: string;
   status: GuestStatus;
   guestName?: string;
   checkInDate?: string;
