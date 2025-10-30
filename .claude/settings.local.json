@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(npm install:*)",
+      "Bash(npm run dev:*)",
+      "Bash(if exist node_modules.vite rmdir /s /q node_modules.vite)",
+      "Bash(npm run build:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(if exist \"src\\components\\Navigation\\Navigation.css\" del \"src\\components\\Navigation\\Navigation.css\")",
+      "Bash(if exist \"src\\components\\Dashboard\\Dashboard.css\" del \"src\\components\\Dashboard\\Dashboard.css\")",
+      "Bash(if exist \"src\\components\\Calendar\\CalendarView.css\" del \"src\\components\\Calendar\\CalendarView.css\")",
+      "Bash(if exist \"src\\App.css\" del \"src\\App.css\")",
+      "Bash(if [ -f \"nul\" ])",
+      "Bash(then echo \"Found nul file\")",
+      "Bash(fi)",
+      "Bash(if [ -d \"node_modules/.vite\" ])",
+      "Bash(then rm -rf node_modules/.vite)",
+      "Bash(else echo \"No .vite cache found\")",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(if exist \"C:\\Users\\Douglas Moura\\Documents\\GitHub\\stays-observator\\node_modules\\.vite\" rmdir /s /q \"C:\\Users\\Douglas Moura\\Documents\\GitHub\\stays-observator\\node_modules\\.vite\")",
+      "Bash(del tailwind.config.js)",
+      "Bash(if exist tailwind.config.js del tailwind.config.js)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
