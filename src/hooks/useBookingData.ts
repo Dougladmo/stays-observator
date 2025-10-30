@@ -129,12 +129,10 @@ export function useBookingData(): UseBookingDataResult {
     const msUntilMidnight = midnight.getTime() - now.getTime();
 
     const midnightTimer = setTimeout(() => {
-      console.log('🌙 Meia-noite detectada! Atualizando dashboard...');
       fetchData();
 
       // Após primeira atualização, repetir a cada 24h
       const dailyInterval = setInterval(() => {
-        console.log('🌙 Atualização diária automática');
         fetchData();
       }, 24 * 60 * 60 * 1000);
 
@@ -143,7 +141,6 @@ export function useBookingData(): UseBookingDataResult {
 
     // Timer 2: Atualização periódica para capturar novas reservas (a cada 5 minutos)
     const periodicInterval = setInterval(() => {
-      console.log('🔄 Atualização periódica - buscando novas reservas');
       fetchData();
     }, 5 * 60 * 1000); // 5 minutos
 

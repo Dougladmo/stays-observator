@@ -53,7 +53,6 @@ class BookingDetailsCache {
    */
   clear(): void {
     this.cache.clear();
-    console.log('🗑️ Cache cleared');
   }
 
   /**
@@ -61,17 +60,11 @@ class BookingDetailsCache {
    */
   cleanup(): void {
     const now = Date.now();
-    let removed = 0;
 
     for (const [key, entry] of this.cache.entries()) {
       if (now - entry.timestamp >= this.cacheDuration) {
         this.cache.delete(key);
-        removed++;
       }
-    }
-
-    if (removed > 0) {
-      console.log(`🧹 Removed ${removed} expired cache entries`);
     }
   }
 
@@ -141,7 +134,6 @@ class ListingDetailsCache {
    */
   clear(): void {
     this.cache.clear();
-    console.log('🗑️ Listing cache cleared');
   }
 
   /**
@@ -149,17 +141,11 @@ class ListingDetailsCache {
    */
   cleanup(): void {
     const now = Date.now();
-    let removed = 0;
 
     for (const [key, entry] of this.cache.entries()) {
       if (now - entry.timestamp >= this.cacheDuration) {
         this.cache.delete(key);
-        removed++;
       }
-    }
-
-    if (removed > 0) {
-      console.log(`🧹 Removed ${removed} expired listing cache entries`);
     }
   }
 
@@ -187,11 +173,6 @@ export async function fetchBookingDetailsInBatches(
   delayMs: number = 500
 ): Promise<StaysBooking[]> {
   const results: StaysBooking[] = [];
-  const totalBatches = Math.ceil(reservationIds.length / batchSize);
-
-  console.log(
-    `🔄 Fetching details for ${reservationIds.length} bookings in ${totalBatches} batches`
-  );
 
   for (let i = 0; i < reservationIds.length; i += batchSize) {
     const batch = reservationIds.slice(i, i + batchSize);
@@ -221,8 +202,6 @@ export async function fetchBookingDetailsInBatches(
     }
   }
 
-  console.log(`✅ Fetched details for ${results.length}/${reservationIds.length} bookings`);
-
   // Cleanup expired cache entries
   bookingDetailsCache.cleanup();
 
@@ -243,7 +222,6 @@ export async function enrichBookingsWithDetails(
   const reservationIds = basicBookings.map((booking) => booking.id);
 
   // Step 1: Fetch booking details in batches
-  console.log('📥 Step 1: Fetching booking details...');
   const detailedBookings = await fetchBookingDetailsInBatches(reservationIds, batchSize);
 
   // Create a map for quick lookup
@@ -256,8 +234,6 @@ export async function enrichBookingsWithDetails(
   });
 
   // Step 2: Fetch listing details (apartment codes) in batches
-  console.log('🏠 Step 2: Fetching apartment codes from Content API...');
-
   // Get unique listing IDs
   const uniqueListingIds = new Set<string>();
   enrichedWithDetails.forEach(booking => {
@@ -265,8 +241,6 @@ export async function enrichBookingsWithDetails(
       uniqueListingIds.add(booking._idlisting);
     }
   });
-
-  console.log(`🔍 Found ${uniqueListingIds.size} unique listings to fetch`);
 
   // Fetch all listing details in parallel (with some batching to avoid overwhelming the API)
   const listingIds = Array.from(uniqueListingIds);
@@ -290,8 +264,6 @@ export async function enrichBookingsWithDetails(
 
   const listingDetailsResults = await Promise.all(listingDetailsPromises);
   const listingDetailsMap = new Map(listingDetailsResults);
-
-  console.log(`✅ Fetched ${listingDetailsResults.filter(([, details]) => details !== null).length}/${uniqueListingIds.size} listing details`);
 
   // Step 3: Enrich bookings with listing information
   const fullyEnrichedBookings = enrichedWithDetails.map(booking => {
