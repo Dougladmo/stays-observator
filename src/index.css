@@ -64,3 +64,30 @@ body {
   width: 100vw;
   overflow: hidden;
 }
+
+/* Marquee scroll animation for overflow text - continuous loop */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(var(--scroll-distance));
+  }
+}
+
+.marquee-animate {
+  animation: marquee var(--animation-duration) linear infinite;
+  will-change: transform;
+}
+
+/* Pause animation on hover for better UX */
+.marquee-animate:hover {
+  animation-play-state: paused;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-animate {
+    animation: none;
+  }
+}

@@ -3,8 +3,9 @@ import Navigation from './components/Navigation/Navigation';
 import Dashboard from './components/Dashboard/Dashboard';
 import DashboardSkeleton from './components/Dashboard/DashboardSkeleton';
 import CalendarView from './components/Calendar/CalendarView';
-import { mockUnits } from './components/Calendar/mockData';
+import CalendarSkeleton from './components/Calendar/CalendarSkeleton';
 import { useBookingData } from './hooks/useBookingData';
+import { useCalendarData } from './hooks/useCalendarData';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { playSuccessSound } from './utils/soundUtils';
@@ -169,6 +170,10 @@ function App() {
       <Navigation />
       <Routes>
         <Route
+          path="/calendar"
+          element={<CalendarRoute />}
+        />
+        <Route
           path="/"
           element={
             <>
@@ -235,10 +240,61 @@ function App() {
             </>
           }
         />
-        <Route path="/calendar" element={<CalendarView units={mockUnits} />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+function CalendarRoute() {
+  const { units, loading, error, configValid } = useCalendarData();
+
+  // Configuration error
+  if (!configValid) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#ecf0f1]">
+        <div className="max-w-2xl p-8 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-[#e74c3c] mb-4">
+            ⚠️ Configuração Incompleta
+          </h2>
+          <p className="text-[#2C3E50] mb-4">
+            Configure as variáveis de ambiente no arquivo <code className="px-2 py-1 bg-gray-100 rounded">.env</code>:
+          </p>
+          <ul className="list-disc list-inside text-[#2C3E50] mb-4 space-y-2">
+            <li><code>VITE_STAYS_CLIENT_ID</code></li>
+            <li><code>VITE_STAYS_CLIENT_SECRET</code></li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return <CalendarSkeleton />;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#ecf0f1]">
+        <div className="max-w-2xl p-8 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-[#e74c3c] mb-4">
+            ❌ Erro ao Carregar Calendário
+          </h2>
+          <p className="text-[#2C3E50] mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-[#3498db] hover:bg-[#2980b9] text-white font-semibold py-2 px-4 rounded"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calendar with data
+  return <CalendarView units={units} />;
 }
 
 export default App;
