@@ -9,7 +9,7 @@ import { useCalendarData } from './hooks/useCalendarData';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { playSuccessSound } from './utils/soundUtils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { AutoRotationProvider, useAutoRotation } from './contexts/AutoRotationContext';
 import { BookingDataProvider } from './contexts/BookingDataContext';
 import { useDashboardData } from './hooks/useDashboardData';
@@ -32,22 +32,40 @@ function AppContent() {
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
 
+  // Store intervalSeconds in ref to avoid recreating timer when it changes
+  const intervalRef = useRef(intervalSeconds);
+
+  // Update ref when intervalSeconds changes (without triggering useEffect)
+  useEffect(() => {
+    intervalRef.current = intervalSeconds;
+  }, [intervalSeconds]);
+
   // Auto-rotation effect
   useEffect(() => {
     if (!enabled) return;
 
+    // Capture fixed interval value at start - ensures consistent timing throughout rotation cycle
+    const fixedInterval = intervalRef.current || 30;
+    console.log('🚀 Starting auto-rotation timer with fixed interval:', fixedInterval);
+
     const timer = setInterval(() => {
-      // Toggle between routes based on current location
       const currentPath = window.location.pathname;
+      console.log('🔄 Auto-rotation timer fired, currentPath:', currentPath);
+
       if (currentPath === '/') {
+        console.log('➡️ Navigating: Dashboard → Calendar');
         navigate('/calendar');
       } else {
+        console.log('⬅️ Navigating: Calendar → Dashboard');
         navigate('/');
       }
-    }, intervalSeconds * 1000);
+    }, fixedInterval * 1000); // Use FIXED value, not ref
 
-    return () => clearInterval(timer);
-  }, [enabled, intervalSeconds, navigate]);
+    return () => {
+      console.log('🛑 Clearing auto-rotation timer');
+      clearInterval(timer);
+    };
+  }, [enabled, navigate]);
 
   // Test button handler to simulate celebration
   const handleTestCelebration = () => {

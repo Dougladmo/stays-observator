@@ -25,7 +25,10 @@
       "Bash(curl:*)",
       "Bash(powershell -Command:*)",
       "Bash(npm uninstall:*)",
-      "mcp__serena__get_symbols_overview"
+      "mcp__serena__get_symbols_overview",
+      "Bash(if [ -f \"public/audio/popup-audio.mp3\" ])",
+      "Bash(then echo \"✅ Arquivo encontrado\")",
+      "Bash(else echo \"❌ Arquivo NAO encontrado\")"
     ],
     "deny": [],
     "ask": []
