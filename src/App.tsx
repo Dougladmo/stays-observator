@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Navigation from './components/Navigation/Navigation';
 import Dashboard from './components/Dashboard/Dashboard';
 import DashboardSkeleton from './components/Dashboard/DashboardSkeleton';
@@ -10,107 +10,55 @@ import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { playSuccessSound } from './utils/soundUtils';
 import { useEffect, useState } from 'react';
+import { AutoRotationProvider, useAutoRotation } from './contexts/AutoRotationContext';
+import { BookingDataProvider } from './contexts/BookingDataContext';
+import { useDashboardData } from './hooks/useDashboardData';
+import { useCalendarViewData } from './hooks/useCalendarViewData';
 
-function App() {
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { enabled, intervalSeconds } = useAutoRotation();
+
+  // Use shared data context (no duplicate API calls)
   const {
     weekData,
-    occupancyStats,
-    occupancyNext30Days,
-    reservationOrigins,
-    occupancyTrend,
     availableUnits,
     loading,
     error,
     configValid,
-    newCheckinCount,
-    lastNewCheckin,
-  } = useBookingData();
+  } = useDashboardData();
 
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Helper function to format date from YYYY-MM-DD to DD/MMM
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr + 'T00:00:00');
-    const day = date.getDate();
-    const month = date.toLocaleDateString('pt-BR', { month: 'short' });
-    return `${day}/${month}`;
-  };
-
-  // Helper function to calculate nights
-  const calculateNights = (checkIn: string, checkOut: string) => {
-    const start = new Date(checkIn + 'T00:00:00');
-    const end = new Date(checkOut + 'T00:00:00');
-    const diff = end.getTime() - start.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
-  };
-
-  type Booking = {
-    guestsDetails?: { name?: string } | null;
-    guestName?: string | null;
-    clientName?: string | null;
-    guest?: { name?: string } | null;
-    _client?: { name?: string } | null;
-    client?: { name?: string } | null;
-    checkInDate?: string | null;
-    checkOutDate?: string | null;
-    stats?: { nights?: number } | null;
-    guests?: number | null;
-    id?: string | number | null;
-  } | null | undefined;
-
-  // Helper function to get guest name
-  const getGuestName = (booking: Booking) => {
-    return booking?.guestsDetails?.name
-      || booking?.guestName
-      || booking?.clientName
-      || booking?.guest?.name
-      || booking?._client?.name
-      || booking?.client?.name
-      || 'Hóspede sem nome';
-  };
-
-  // Trigger celebration when new checkin reservations are detected
+  // Auto-rotation effect
   useEffect(() => {
-    if (newCheckinCount > 0) {
-      console.log('🎉 Celebração ativada! Nova reserva de check-in detectada!');
+    if (!enabled) return;
 
-      // Show confetti
-      setShowConfetti(true);
+    const timer = setInterval(() => {
+      // Toggle between routes based on current location
+      const currentPath = window.location.pathname;
+      if (currentPath === '/') {
+        navigate('/calendar');
+      } else {
+        navigate('/');
+      }
+    }, intervalSeconds * 1000);
 
-      // Play sound
-      playSuccessSound();
+    return () => clearInterval(timer);
+  }, [enabled, intervalSeconds, navigate]);
 
-      // Hide confetti after 10 seconds
-      const timer = setTimeout(() => {
-        setShowConfetti(false);
-      }, 10000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [newCheckinCount]);
-
-  // Test button handler to simulate new reservation
+  // Test button handler to simulate celebration
   const handleTestCelebration = () => {
     console.log('🧪 Testando animação de celebração');
-
-    // Show confetti
     setShowConfetti(true);
-
-    // Play sound
     playSuccessSound();
-
-    // Simulate a new checkin for testing (will use lastNewCheckin from real data if available)
-    // If no real data, the popup will show generic message
-
-    // Hide confetti after 10 seconds
-    setTimeout(() => {
-      setShowConfetti(false);
-    }, 10000);
+    setTimeout(() => setShowConfetti(false), 10000);
   };
 
   return (
-    <BrowserRouter>
+    <>
       {/* Confetti Animation */}
       {showConfetti && (
         <>
@@ -121,27 +69,9 @@ function App() {
               <h1 className="mb-12 font-bold text-gray-800 text-8xl">
                 Nova Reserva!
               </h1>
-
-              {lastNewCheckin ? (
-                <div className="space-y-6 text-5xl leading-relaxed text-gray-700">
-                  <div className="text-6xl font-bold text-blue-600">
-                    {lastNewCheckin.id}
-                  </div>
-                  <div className="font-semibold text-gray-800">
-                    {getGuestName(lastNewCheckin)}
-                  </div>
-                  <div className="text-gray-600">
-                    {formatDate(lastNewCheckin.checkInDate)} → {formatDate(lastNewCheckin.checkOutDate)}
-                  </div>
-                  <div className="text-gray-500">
-                    {lastNewCheckin.stats?.nights || calculateNights(lastNewCheckin.checkInDate, lastNewCheckin.checkOutDate)} {(lastNewCheckin.stats?.nights || calculateNights(lastNewCheckin.checkInDate, lastNewCheckin.checkOutDate)) === 1 ? 'noite' : 'noites'} | {lastNewCheckin.guests || 0} {lastNewCheckin.guests === 1 ? 'hosp' : 'hosp'}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-5xl text-gray-600">
-                  {newCheckinCount} {newCheckinCount === 1 ? 'nova reserva' : 'novas reservas'} detectada{newCheckinCount === 1 ? '' : 's'}!
-                </div>
-              )}
+              <div className="text-5xl text-gray-600">
+                Teste de celebração
+              </div>
             </div>
           </div>
 
@@ -167,8 +97,9 @@ function App() {
         🎉 Testar Celebração
       </button>
 
-      <Navigation />
-      <Routes>
+      <div className="transition-opacity duration-500">
+        <Navigation />
+        <Routes>
         <Route
           path="/calendar"
           element={<CalendarRoute />}
@@ -230,10 +161,6 @@ function App() {
               {configValid && !loading && !error && (
                 <Dashboard
                   weekData={weekData}
-                  occupancyStats={occupancyStats}
-                  occupancyNext30Days={occupancyNext30Days}
-                  reservationOrigins={reservationOrigins}
-                  occupancyTrend={occupancyTrend}
                   variousUnits={availableUnits}
                 />
               )}
@@ -241,12 +168,13 @@ function App() {
           }
         />
       </Routes>
-    </BrowserRouter>
+      </div>
+    </>
   );
 }
 
 function CalendarRoute() {
-  const { units, loading, error, configValid } = useCalendarData();
+  const { units, loading, error, configValid } = useCalendarViewData();
 
   // Configuration error
   if (!configValid) {
@@ -295,6 +223,18 @@ function CalendarRoute() {
 
   // Calendar with data
   return <CalendarView units={units} />;
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <BookingDataProvider>
+        <AutoRotationProvider>
+          <AppContent />
+        </AutoRotationProvider>
+      </BookingDataProvider>
+    </BrowserRouter>
+  );
 }
 
 export default App;

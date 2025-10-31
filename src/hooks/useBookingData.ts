@@ -84,12 +84,30 @@ export function useBookingData(): UseBookingDataResult {
     setError(null);
 
     try {
-      // Fetch booking data for the next 37 days (7 days for week view + 30 for trends)
+      // Fetch booking data including past bookings to capture checkouts
+      // Need to look back to catch reservations that started before today but checkout today
       const today = new Date();
-      const { from, to } = getDateRange(today, 37);
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - 30); // Look back 30 days to catch active stays
 
-      // Get all bookings with automatic pagination
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + 37); // 7 days for week view + 30 for trends
+
+      const from = startDate.toISOString().split('T')[0];
+      const to = endDate.toISOString().split('T')[0];
+
+      // Get all bookings with automatic pagination (includes past, current, and future)
       const basicBookings = await staysBookingApi.getAllBookings(from, to, 'included');
+
+      console.log(`📥 Fetched ${basicBookings.length} bookings from ${from} to ${to}`);
+
+      // Debug: Check today's checkouts in raw data
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todaysCheckouts = basicBookings.filter(b => b.checkOutDate === todayStr);
+      console.log(`🔍 Raw API: ${todaysCheckouts.length} checkouts scheduled for today (${todayStr})`);
+      if (todaysCheckouts.length > 0) {
+        console.log('   Checkout bookings:', todaysCheckouts.map(b => `${b.id} (${b._idlisting})`));
+      }
 
       // Enrich bookings with detailed information (guest names, platform info)
       const enrichedBookings = await enrichBookingsWithDetails(basicBookings, 10);

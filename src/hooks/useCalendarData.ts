@@ -55,11 +55,19 @@ export function useCalendarData(): UseCalendarDataResult {
     setError(null);
 
     try {
-      // Fetch booking data for 60 days (calendar view)
+      // Fetch booking data for extended period to capture ALL units
+      // We fetch 365 days to ensure we capture all properties (past + future)
+      // This ensures units without current reservations are still listed
       const today = new Date();
-      const { from, to } = getDateRange(today, 60);
+      const pastDate = new Date(today);
+      pastDate.setDate(pastDate.getDate() - 180); // 6 months back
+      const futureDate = new Date(today);
+      futureDate.setDate(futureDate.getDate() + 180); // 6 months forward
 
-      // Get all bookings with automatic pagination
+      const from = pastDate.toISOString().split('T')[0];
+      const to = futureDate.toISOString().split('T')[0];
+
+      // Get all bookings with automatic pagination (covers 1 year to capture all units)
       const basicBookings = await staysBookingApi.getAllBookings(from, to, 'included');
 
       // Enrich bookings with detailed information (guest names, platform info, internalName)

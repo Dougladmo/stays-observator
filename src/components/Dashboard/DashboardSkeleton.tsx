@@ -3,13 +3,13 @@
  * Shows placeholder structure while data is being fetched
  */
 
-import { Card, CardContent } from '../ui/card';
+import { Card } from '../ui/card';
 
 export default function DashboardSkeleton() {
   return (
     <div className="h-[96vh] w-screen overflow-hidden bg-[#ecf0f1] p-[1vh_1vw] flex flex-col">
       {/* Week cards skeleton */}
-      <div className="grid grid-cols-7 gap-[0.5vw] mb-[1vh] h-[56vh] overflow-hidden shrink-0">
+      <div className="grid grid-cols-7 gap-[0.5vw] mb-[1vh] h-[93vh] overflow-hidden shrink-0">
         {[...Array(7)].map((_, i) => (
           <Card key={i} className="flex flex-col h-full overflow-hidden animate-pulse">
             {/* Header skeleton */}
@@ -34,32 +34,6 @@ export default function DashboardSkeleton() {
         ))}
       </div>
 
-      {/* Bottom section skeleton */}
-      <div className="grid grid-cols-[4fr_1fr] gap-[1vw] h-[32vh] overflow-hidden shrink-0">
-        {/* Charts skeleton */}
-        <div className="grid grid-cols-4 gap-[1vw] h-full">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="flex flex-col items-center justify-center overflow-hidden animate-pulse">
-              <CardContent className="p-[1vh_1vw] flex flex-col items-center justify-center w-full">
-                <div className="w-[14vh] h-[14vh] rounded-full bg-gray-300 shrink-0"></div>
-                <div className="h-[1.1vh] bg-gray-300 rounded mt-[1vh] w-24"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Empty units skeleton */}
-        <Card className="flex flex-col overflow-hidden animate-pulse">
-          <CardContent className="p-[1vh_1vw] flex flex-col h-full">
-            <div className="h-[1.2vh] bg-gray-300 rounded mb-[1vh] w-32"></div>
-            <div className="flex flex-col gap-[0.5vh] flex-1">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-[3vh] bg-gray-300 rounded"></div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

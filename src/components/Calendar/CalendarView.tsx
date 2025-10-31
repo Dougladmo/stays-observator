@@ -91,7 +91,7 @@ export default function CalendarView({
   return (
     <div className="w-screen h-[96vh] bg-[#FAFAFA] overflow-hidden flex flex-col">
       {/* Header Section */}
-      <div className="flex bg-white border-b border-[#E0E0E0] h-[10vh] shrink-0">
+      <div className="flex bg-white border-b border-[#E0E0E0] h-[7vh] shrink-0">
         <div className="w-[200px] p-[1vh_1vw] flex items-center border-r border-[#E0E0E0] shrink-0">
           <h3 className="m-0 text-[clamp(15px,1.2vh,14px)] font-semibold text-[#333333]">
             Unidades Individuais
@@ -104,11 +104,11 @@ export default function CalendarView({
               return (
                 <div
                   key={idx}
-                  className="flex flex-col h-full"
+                  className="flex flex-col"
                   style={{ width: `${group.days.length * dayWidth}px` }}
                 >
-                  <div className="p-[1vh_0.3vw] text-[clamp(10px,1.1vh,13px)] font-semibold text-[#333333] tracking-wide border-r border-[#E0E0E0] shrink-0">
-                    {group.month} - {group.year}
+                  <div className="p-[0.5vh_0.3vw] text-[clamp(10px,1vh,12px)] font-semibold text-[#333333] tracking-wide border-r border-[#E0E0E0] shrink-0">
+                    {group.month}
                   </div>
                   <div className="flex border-t border-[#E0E0E0] flex-1">
                     {group.days.map((day, dayIdx) => (
@@ -120,10 +120,10 @@ export default function CalendarView({
                           day.isHighlighted && "bg-[#FFE5D9]"
                         )}
                       >
-                        <div className="text-[clamp(8px,0.9vh,10px)] font-semibold text-[#666666] uppercase tracking-wide">
+                        <div className="text-[clamp(7px,0.8vh,9px)] font-semibold text-[#666666] uppercase tracking-wide">
                           {day.dayOfWeek}
                         </div>
-                        <div className="text-[clamp(12px,1.4vh,16px)] font-medium text-[#333333]">
+                        <div className="text-[clamp(11px,1.2vh,14px)] font-medium text-[#333333]">
                           {day.dayOfMonth}
                         </div>
                       </div>
@@ -137,13 +137,13 @@ export default function CalendarView({
       </div>
 
       {/* Calendar Body */}
-      <div className="flex-1 flex overflow-hidden h-[86vh]">
+      <div className="flex-1 flex overflow-hidden h-[88vh]">
         {/* Units Sidebar */}
         <div className="w-[200px] bg-white border-r border-[#E0E0E0] overflow-hidden shrink-0">
           {units.map((unit) => (
             <div
               key={unit.id}
-              className="h-[3.75vh] flex items-center gap-[0.8vw] px-[1vw] border-b border-[#E0E0E0]"
+              className="h-[2.97vh] flex items-center gap-[0.8vw] px-[1vw] border-b border-[#E0E0E0]"
             >
               <span className="flex-1 text-[clamp(16x,1vh,11px)] font-medium text-[#333333] overflow-hidden text-ellipsis whitespace-nowrap">
                 {unit.code}
@@ -158,7 +158,7 @@ export default function CalendarView({
             {units.map((unit) => (
               <div
                 key={unit.id}
-                className="h-[3.75vh] relative border-b border-[#E0E0E0]"
+                className="h-[2.97vh] relative border-b border-[#E0E0E0]"
               >
                 {/* Grid Background */}
                 <div className="absolute inset-0 flex h-full">
@@ -183,7 +183,7 @@ export default function CalendarView({
                       <div
                         key={reservation.id}
                         className={cn(
-                          "absolute top-[0.3vh] h-[3vh] rounded-full px-[0.6vw] py-[0.3vh] flex items-center gap-[0.5vw] pointer-events-auto cursor-pointer transition-all hover:-translate-y-px hover:shadow-md shadow-sm overflow-hidden",
+                          "absolute top-[0.25vh] h-[2vh] rounded-full px-[0.6vw] py-[0.2vh] flex items-center gap-[0.5vw] pointer-events-auto cursor-pointer transition-all hover:-translate-y-px hover:shadow-md shadow-sm overflow-hidden",
                           isReserved ? "bg-[#0F5B78]" : "bg-[#E74C3C]"
                         )}
                         style={{
@@ -198,16 +198,16 @@ export default function CalendarView({
                               src={reservation.platformImage}
                               alt={reservation.platform}
                               title={reservation.platform}
-                              className="w-[clamp(20px,1.6vh,18px)] h-[clamp(20px,1.6vh,18px)] object-contain mx-2 shrink-0"
+                              className="w-[clamp(14px,1.4vh,16px)] h-[clamp(14px,1.4vh,16px)] object-contain mx-1 shrink-0"
                             />
                           )}
                           {/* Nome do hóspede */}
-                          <span className="text-white text-[clamp(12px,1.1vh,13px)] font-semibold whitespace-nowrap mx-2">
+                          <span className="text-white text-[clamp(10px,0.9vh,11px)] font-semibold whitespace-nowrap mx-1">
                             {reservation.guestName}
                           </span>
 
                           {/* Quantidade de hóspedes */}
-                          <span className="text-white text-[clamp(12px,1.1vh,13px)] font-semibold whitespace-nowrap mx-2 shrink-0">
+                          <span className="text-white text-[clamp(10px,0.9vh,11px)] font-semibold whitespace-nowrap mx-1 shrink-0">
                             {reservation.guestCount}{" "}
                             {reservation.guestCount === 1
                               ? "hospede"

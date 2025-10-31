@@ -24,7 +24,8 @@
       "Bash(if exist tailwind.config.js del tailwind.config.js)",
       "Bash(curl:*)",
       "Bash(powershell -Command:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "mcp__serena__get_symbols_overview"
     ],
     "deny": [],
     "ask": []

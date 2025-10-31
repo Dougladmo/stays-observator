@@ -61,33 +61,47 @@ function bookingToCalendarReservation(booking: StaysBooking): Reservation {
 
 /**
  * Groups bookings by listing and converts to Calendar Units
+ * Includes ALL units, even those without reservations in the current period
  * @param bookings - Array of enriched bookings from API
- * @returns Array of Calendar Units with reservations
+ * @returns Array of Calendar Units with reservations (empty array for units without bookings)
  */
 export function bookingsToCalendarUnits(bookings: StaysBooking[]): Unit[] {
-  // Group bookings by listing ID
-  const listingMap = new Map<string, StaysBooking[]>();
+  // First, collect ALL unique listings from all bookings
+  // This ensures we capture units even if they only have historical bookings
+  const allListingsMap = new Map<string, { code: string; internalName?: string }>();
 
   bookings.forEach(booking => {
     if (!booking._idlisting) return;
 
-    const existing = listingMap.get(booking._idlisting) || [];
-    existing.push(booking);
-    listingMap.set(booking._idlisting, existing);
+    // Store listing info if not already present
+    if (!allListingsMap.has(booking._idlisting)) {
+      const internalName = booking.listing?.internalName;
+      const code = internalName
+        ? internalName.split('|')[0].trim()
+        : booking._idlisting;
+
+      allListingsMap.set(booking._idlisting, { code, internalName });
+    }
   });
 
-  // Convert grouped bookings to Units
+  // Group bookings by listing ID (only for current period)
+  const listingBookingsMap = new Map<string, StaysBooking[]>();
+
+  bookings.forEach(booking => {
+    if (!booking._idlisting) return;
+
+    const existing = listingBookingsMap.get(booking._idlisting) || [];
+    existing.push(booking);
+    listingBookingsMap.set(booking._idlisting, existing);
+  });
+
+  // Convert ALL listings to Units (with or without reservations)
   const units: Unit[] = [];
 
-  listingMap.forEach((listingBookings, listingId) => {
-    // Get apartment code from first booking with internalName
-    const bookingWithName = listingBookings.find(b => b.listing?.internalName);
-    const internalName = bookingWithName?.listing?.internalName;
-    const code = internalName
-      ? internalName.split('|')[0].trim()
-      : listingId;
+  allListingsMap.forEach((listingInfo, listingId) => {
+    const listingBookings = listingBookingsMap.get(listingId) || [];
 
-    // Convert all bookings to reservations
+    // Convert bookings to reservations (empty array if no bookings)
     const reservations: Reservation[] = listingBookings.map(bookingToCalendarReservation);
 
     // Sort reservations by start date
@@ -95,7 +109,7 @@ export function bookingsToCalendarUnits(bookings: StaysBooking[]): Unit[] {
 
     units.push({
       id: listingId,
-      code,
+      code: listingInfo.code,
       thumbnail: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=200&h=150&fit=crop', // Placeholder
       reservations,
     });

@@ -106,6 +106,17 @@ export function processBookingsForDate(
     }
   }
 
+  // Debug: Log checkout counts for today
+  if (targetDate === new Date().toISOString().split('T')[0]) {
+    const checkouts = guests.filter(g => g.status === 'checkout');
+    const checkins = guests.filter(g => g.status === 'checkin');
+    const staying = guests.filter(g => g.status === 'staying');
+    console.log(`📊 [${targetDate}] Check-ins: ${checkins.length}, Check-outs: ${checkouts.length}, Staying: ${staying.length}`);
+    if (checkouts.length > 0) {
+      console.log('🔴 Checkouts:', checkouts.map(g => `${g.code} (${g.guestName})`));
+    }
+  }
+
   return guests;
 }
 
@@ -263,25 +274,34 @@ export function calculateOccupancyTrend(
  */
 export function getAvailableUnits(
   bookings: StaysBooking[],
-  targetDate: string
+  targetDate: string,
+  allListingsMap?: Map<string, string>
 ): string[] {
-  // Create a map of listing ID to internalName (apartment code)
-  const listingIdToName = new Map<string, string>();
-  bookings.forEach(booking => {
-    if (booking._idlisting) {
-      // Use internalName if available, otherwise use listing ID
-      // Extract only the part before the pipe "|" if it exists
-      const internalName = booking.listing?.internalName;
-      const name = internalName
-        ? internalName.split('|')[0].trim()
-        : booking._idlisting;
-      listingIdToName.set(booking._idlisting, name);
-    }
-  });
+  // Determine which listings to check (complete list or just from bookings)
+  let allListingIds: Set<string>;
+  let listingIdToName: Map<string, string>;
 
-  const allListings = new Set(bookings.map((b) => b._idlisting));
+  if (allListingsMap && allListingsMap.size > 0) {
+    // Use complete listings map from context (includes properties without bookings)
+    allListingIds = new Set(allListingsMap.keys());
+    listingIdToName = allListingsMap;
+  } else {
+    // Fallback: build from bookings only
+    listingIdToName = new Map<string, string>();
+    bookings.forEach(booking => {
+      if (booking._idlisting) {
+        const internalName = booking.listing?.internalName;
+        const name = internalName
+          ? internalName.split('|')[0].trim()
+          : booking._idlisting;
+        listingIdToName.set(booking._idlisting, name);
+      }
+    });
+    allListingIds = new Set(bookings.map((b) => b._idlisting));
+  }
+
+  // Find occupied listings for target date
   const occupiedListings = new Set<string>();
-
   for (const booking of bookings) {
     const status = classifyBookingStatus(booking, targetDate);
     if (status === 'staying' || status === 'checkin') {
@@ -290,9 +310,10 @@ export function getAvailableUnits(
   }
 
   // Return apartment codes for available units
-  return Array.from(allListings)
+  return Array.from(allListingIds)
     .filter((listing) => !occupiedListings.has(listing))
-    .map((listing) => listingIdToName.get(listing) || listing);
+    .map((listing) => listingIdToName.get(listing) || listing)
+    .sort((a, b) => a.localeCompare(b)); // Sort alphabetically
 }
 
 /**
