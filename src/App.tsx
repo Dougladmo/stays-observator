@@ -96,14 +96,14 @@ function AppContent() {
         </>
       )}
 
-      {/* Test Button (fixed position) */}
+      {/* Test Button (fixed position)
       <button
         onClick={handleTestCelebration}
         className="fixed z-50 px-6 py-3 font-semibold text-white transition-all duration-200 rounded-lg shadow-lg bottom-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 hover:scale-105 hover:shadow-xl"
         title="Testar animação de nova reserva"
       >
         🎉 Testar Celebração
-      </button>
+      </button> */}
 
       <div className="transition-opacity duration-500">
         <Navigation />
