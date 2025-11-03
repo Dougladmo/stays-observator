@@ -1,15 +1,13 @@
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Navigation from './components/Navigation/Navigation';
 import Dashboard from './components/Dashboard/Dashboard';
 import DashboardSkeleton from './components/Dashboard/DashboardSkeleton';
 import CalendarView from './components/Calendar/CalendarView';
 import CalendarSkeleton from './components/Calendar/CalendarSkeleton';
-import { useBookingData } from './hooks/useBookingData';
-import { useCalendarData } from './hooks/useCalendarData';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import { playSuccessSound } from './utils/soundUtils';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { AutoRotationProvider, useAutoRotation } from './contexts/AutoRotationContext';
 import { BookingDataProvider } from './contexts/BookingDataContext';
 import { useDashboardData } from './hooks/useDashboardData';
@@ -17,7 +15,6 @@ import { useCalendarViewData } from './hooks/useCalendarViewData';
 
 function AppContent() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { enabled, intervalSeconds } = useAutoRotation();
 
   // Use shared data context (no duplicate API calls)
@@ -32,40 +29,33 @@ function AppContent() {
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // Store intervalSeconds in ref to avoid recreating timer when it changes
-  const intervalRef = useRef(intervalSeconds);
-
-  // Update ref when intervalSeconds changes (without triggering useEffect)
+  // Auto-rotation effect - recreates timer when enabled or intervalSeconds changes
   useEffect(() => {
-    intervalRef.current = intervalSeconds;
-  }, [intervalSeconds]);
+    if (!enabled) {
+      console.log('⏸️ Auto-rotation disabled');
+      return;
+    }
 
-  // Auto-rotation effect
-  useEffect(() => {
-    if (!enabled) return;
-
-    // Capture fixed interval value at start - ensures consistent timing throughout rotation cycle
-    const fixedInterval = intervalRef.current || 30;
-    console.log('🚀 Starting auto-rotation timer with fixed interval:', fixedInterval);
+    console.log(`🚀 Starting auto-rotation: ${intervalSeconds}s interval`);
 
     const timer = setInterval(() => {
       const currentPath = window.location.pathname;
-      console.log('🔄 Auto-rotation timer fired, currentPath:', currentPath);
+      console.log('🔄 Auto-rotation tick, current:', currentPath);
 
       if (currentPath === '/') {
-        console.log('➡️ Navigating: Dashboard → Calendar');
+        console.log('→ Navigating to Calendar');
         navigate('/calendar');
       } else {
-        console.log('⬅️ Navigating: Calendar → Dashboard');
+        console.log('→ Navigating to Dashboard');
         navigate('/');
       }
-    }, fixedInterval * 1000); // Use FIXED value, not ref
+    }, intervalSeconds * 1000);
 
     return () => {
-      console.log('🛑 Clearing auto-rotation timer');
+      console.log('🛑 Stopping auto-rotation timer');
       clearInterval(timer);
     };
-  }, [enabled, navigate]);
+  }, [enabled, intervalSeconds, navigate]);
 
   // Test button handler to simulate celebration
   const handleTestCelebration = () => {

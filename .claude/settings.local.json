@@ -28,7 +28,9 @@
       "mcp__serena__get_symbols_overview",
       "Bash(if [ -f \"public/audio/popup-audio.mp3\" ])",
       "Bash(then echo \"✅ Arquivo encontrado\")",
-      "Bash(else echo \"❌ Arquivo NAO encontrado\")"
+      "Bash(else echo \"❌ Arquivo NAO encontrado\")",
+      "mcp__serena__list_dir",
+      "Bash(dir /b C:UsersDouglas MouraDocumentsGitHubstays-observator.env.example)"
     ],
     "deny": [],
     "ask": []

@@ -2,15 +2,16 @@
  * Shared booking data context
  * Prevents duplicate API calls when switching between Dashboard and Calendar
  * Maintains a 5-minute cache for all booking data
+ * Uses localStorage for instant loading on subsequent visits
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import { validateConfig, config } from '../services/config';
 import { staysBookingApi } from '../services/staysBookingApi';
 import { staysContentApi } from '../services/staysContentApi';
 import type { StaysBooking } from '../services/api/bookingTypes';
 import { enrichBookingsWithDetails } from '../services/bookingDetailsCache';
-import { getDateRange } from '../services/bookingTransformers';
 
 interface BookingDataContextType {
   /** All bookings (raw data) */
@@ -32,6 +33,104 @@ interface BookingDataContextType {
 const BookingDataContext = createContext<BookingDataContextType | undefined>(undefined);
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const STORAGE_KEY = 'stays-observator-booking-data';
+const STORAGE_VERSION = 1;
+
+/**
+ * Cached data structure for localStorage
+ */
+interface CachedBookingData {
+  version: number;
+  bookings: StaysBooking[];
+  listingsMap: [string, string][]; // Map serialized as array of pairs
+  timestamp: number;
+  lastFetchTime: number;
+}
+
+/**
+ * Save booking data to localStorage for instant loading on next visit
+ */
+function saveToLocalStorage(
+  bookings: StaysBooking[],
+  listingsMap: Map<string, string>,
+  lastFetchTime: number
+): void {
+  try {
+    const data: CachedBookingData = {
+      version: STORAGE_VERSION,
+      bookings,
+      listingsMap: Array.from(listingsMap.entries()),
+      timestamp: Date.now(),
+      lastFetchTime,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    console.log('💾 Saved to localStorage:', {
+      bookingsCount: bookings.length,
+      listingsCount: listingsMap.size,
+    });
+  } catch (error) {
+    console.error('❌ Failed to save to localStorage:', error);
+    // Non-blocking error - continue without localStorage
+  }
+}
+
+/**
+ * Load booking data from localStorage
+ * Returns null if no data, corrupted data, or version mismatch
+ */
+function loadFromLocalStorage(): {
+  bookings: StaysBooking[];
+  listingsMap: Map<string, string>;
+  timestamp: number;
+  lastFetchTime: number;
+} | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      console.log('📭 No cached data in localStorage');
+      return null;
+    }
+
+    const data: CachedBookingData = JSON.parse(raw);
+
+    // Version validation
+    if (data.version !== STORAGE_VERSION) {
+      console.warn('⚠️ localStorage version mismatch, clearing cache');
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+
+    // Structure validation
+    if (!Array.isArray(data.bookings) || !Array.isArray(data.listingsMap)) {
+      console.warn('⚠️ Invalid localStorage data structure, clearing cache');
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+
+    const age = Date.now() - data.timestamp;
+    const ageMinutes = Math.floor(age / 60000);
+    console.log(`📦 Loaded from localStorage (age: ${ageMinutes} minutes)`, {
+      bookingsCount: data.bookings.length,
+      listingsCount: data.listingsMap.length,
+    });
+
+    return {
+      bookings: data.bookings,
+      listingsMap: new Map(data.listingsMap),
+      timestamp: data.timestamp,
+      lastFetchTime: data.lastFetchTime,
+    };
+  } catch (error) {
+    console.error('❌ Failed to load from localStorage:', error);
+    // Clear corrupted data
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    return null;
+  }
+}
 
 export function BookingDataProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<StaysBooking[]>([]);
@@ -42,7 +141,7 @@ export function BookingDataProvider({ children }: { children: ReactNode }) {
 
   const configValidation = validateConfig();
 
-  const fetchData = useCallback(async (force = false) => {
+  const fetchData = useCallback(async (force = false, backgroundRefresh = false) => {
     // Check if we need to fetch (no data or cache expired or forced)
     const now = Date.now();
     if (!force && lastFetchTime && (now - lastFetchTime) < CACHE_DURATION) {
@@ -63,11 +162,17 @@ export function BookingDataProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    setLoading(true);
+    // Only show loading spinner if not a background refresh
+    if (!backgroundRefresh) {
+      setLoading(true);
+    } else {
+      console.log('🔄 Background refresh (UI not blocked)');
+    }
     setError(null);
 
     try {
-      console.log('🔄 Fetching fresh booking data...');
+      const logPrefix = backgroundRefresh ? '🔄 [Background]' : '🔄';
+      console.log(`${logPrefix} Fetching fresh booking data...`);
 
       // Fetch extended period to capture ALL properties
       // 180 days back + 180 days forward = 1 year total
@@ -105,8 +210,8 @@ export function BookingDataProvider({ children }: { children: ReactNode }) {
       // If config has listing IDs, fetch missing ones
       if (config.api.listingIds.length > 0) {
         const configIds = new Set(config.api.listingIds);
-        const bookingIds = new Set(enrichedBookings.map(b => b._idlisting));
-        const missingIds = Array.from(configIds).filter(id => !bookingIds.has(id));
+        const bookingIds = new Set(enrichedBookings.map(b => b._idlisting).filter((id): id is string => typeof id === 'string'));
+        const missingIds = Array.from(configIds).filter((id): id is string => typeof id === 'string' && !bookingIds.has(id));
 
         if (missingIds.length > 0) {
           console.log(`🔍 Fetching ${missingIds.length} missing listings from Content API...`);
@@ -129,9 +234,14 @@ export function BookingDataProvider({ children }: { children: ReactNode }) {
 
       console.log(`✅ Total listings map: ${listingsMap.size} properties`);
 
+      const newFetchTime = Date.now();
+
+      // Save to localStorage for instant loading next time
+      saveToLocalStorage(enrichedBookings, listingsMap, newFetchTime);
+
       setBookings(enrichedBookings);
       setAllListingsMap(listingsMap);
-      setLastFetchTime(Date.now());
+      setLastFetchTime(newFetchTime);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar dados da API Stays Booking';
       setError(errorMessage);
@@ -141,22 +251,39 @@ export function BookingDataProvider({ children }: { children: ReactNode }) {
     }
   }, [configValidation, lastFetchTime]);
 
-  // Initial fetch
+  // Initial load: Try localStorage first, then fetch in background
   useEffect(() => {
-    fetchData();
+    const cachedData = loadFromLocalStorage();
+
+    if (cachedData) {
+      // Load cached data instantly (no loading spinner)
+      console.log('⚡ Instant load from localStorage');
+      setBookings(cachedData.bookings);
+      setAllListingsMap(cachedData.listingsMap);
+      setLastFetchTime(cachedData.lastFetchTime);
+      setLoading(false);
+
+      // Fetch fresh data in background to keep cache updated
+      console.log('🔄 Starting background refresh...');
+      fetchData(false, true); // backgroundRefresh = true
+    } else {
+      // No cache: do normal fetch with loading spinner
+      console.log('🆕 First time load - fetching from API...');
+      fetchData();
+    }
   }, []);
 
-  // Auto-refresh every 5 minutes
+  // Auto-refresh every 5 minutes (background refresh - no loading spinner)
   useEffect(() => {
     const interval = setInterval(() => {
       console.log('⏰ Auto-refresh: 5 minutes elapsed');
-      fetchData();
+      fetchData(false, true); // backgroundRefresh = true
     }, CACHE_DURATION);
 
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  // Midnight refresh
+  // Midnight refresh (background refresh - no loading spinner)
   useEffect(() => {
     const now = new Date();
     const midnight = new Date(now);
@@ -165,11 +292,11 @@ export function BookingDataProvider({ children }: { children: ReactNode }) {
 
     const midnightTimer = setTimeout(() => {
       console.log('🌙 Midnight refresh');
-      fetchData(true);
+      fetchData(true, true); // force = true, backgroundRefresh = true
 
       // After first midnight, repeat every 24h
       const dailyInterval = setInterval(() => {
-        fetchData(true);
+        fetchData(true, true); // force = true, backgroundRefresh = true
       }, 24 * 60 * 60 * 1000);
 
       return () => clearInterval(dailyInterval);

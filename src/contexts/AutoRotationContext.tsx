@@ -1,9 +1,11 @@
 /**
  * Auto-rotation context for automatic screen transitions
  * Controls the interval and enabled state for rotating between Dashboard and Calendar
+ * Persists configuration in localStorage
  */
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 export interface AutoRotationContextType {
   /** Whether auto-rotation is enabled */
@@ -18,15 +20,63 @@ export interface AutoRotationContextType {
 
 const AutoRotationContext = createContext<AutoRotationContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'stays-observator-autorotation-config';
+
+interface RotationConfig {
+  enabled: boolean;
+  intervalSeconds: number;
+}
+
+/**
+ * Load auto-rotation configuration from localStorage
+ */
+function loadConfig(): RotationConfig {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const config = JSON.parse(raw);
+      console.log('⚙️ Loaded auto-rotation config:', config);
+      return config;
+    }
+  } catch (error) {
+    console.error('❌ Failed to load rotation config:', error);
+  }
+  return { enabled: false, intervalSeconds: 30 };
+}
+
+/**
+ * Save auto-rotation configuration to localStorage
+ */
+function saveConfig(config: RotationConfig): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    console.log('💾 Saved auto-rotation config:', config);
+  } catch (error) {
+    console.error('❌ Failed to save rotation config:', error);
+  }
+}
+
 export function AutoRotationProvider({ children }: { children: ReactNode }) {
-  const [enabled, setEnabled] = useState(false);
-  const [intervalSeconds, setIntervalSeconds] = useState(30); // Default 30 seconds
+  // Load initial state from localStorage
+  const initialConfig = loadConfig();
+  const [enabled, setEnabled] = useState(initialConfig.enabled);
+  const [intervalSeconds, setIntervalSeconds] = useState(initialConfig.intervalSeconds);
+
+  // Save to localStorage whenever config changes
+  useEffect(() => {
+    saveConfig({ enabled, intervalSeconds });
+  }, [enabled, intervalSeconds]);
 
   const toggleEnabled = () => {
-    setEnabled(prev => !prev);
+    setEnabled(prev => {
+      const newValue = !prev;
+      console.log(`🔄 Auto-rotation ${newValue ? 'ENABLED' : 'DISABLED'}`);
+      return newValue;
+    });
   };
 
   const setInterval = (seconds: number) => {
+    console.log(`⏱️ Setting rotation interval to ${seconds}s`);
     setIntervalSeconds(seconds);
   };
 

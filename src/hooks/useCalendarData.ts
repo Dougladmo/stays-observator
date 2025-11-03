@@ -10,7 +10,6 @@ import type { StaysBooking } from '../services/api/bookingTypes';
 import type { Unit } from '../components/Calendar/types';
 import { bookingsToCalendarUnits } from '../services/calendarTransformers';
 import { enrichBookingsWithDetails } from '../services/bookingDetailsCache';
-import { getDateRange } from '../services/bookingTransformers';
 
 export interface UseCalendarDataResult {
   /** Calendar units with reservations */

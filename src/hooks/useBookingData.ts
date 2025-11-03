@@ -15,7 +15,6 @@ import {
   getReservationOrigins,
   calculateOccupancyTrend,
   getAvailableUnits,
-  getDateRange,
 } from '../services/bookingTransformers';
 import { enrichBookingsWithDetails } from '../services/bookingDetailsCache';
 
