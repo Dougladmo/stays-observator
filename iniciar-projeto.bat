@@ -28,10 +28,10 @@ REM Iniciando o projeto
 REM ========================================
 echo.
 echo [INFO] Iniciando o projeto...
-echo [INFO] Executando: npm start
+echo [INFO] Executando: npm run dev
 echo.
 
-npm start
+npm run dev
 
 REM Mantem a janela aberta em caso de erro
 if errorlevel 1 (
