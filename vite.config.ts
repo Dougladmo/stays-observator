@@ -12,10 +12,16 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      // Backend API proxy (primary)
+      '/api/v1': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // Legacy: Stays.net direct API (deprecated)
+      '/stays-api': {
         target: 'https://casap.stays.net',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        rewrite: (path) => path.replace(/^\/stays-api/, ''),
         secure: true,
       },
     },

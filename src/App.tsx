@@ -9,22 +9,22 @@ import { useWindowSize } from 'react-use';
 import { playSuccessSound } from './utils/soundUtils';
 import { useEffect, useState } from 'react';
 import { AutoRotationProvider, useAutoRotation } from './contexts/AutoRotationContext';
-import { BookingDataProvider } from './contexts/BookingDataContext';
-import { useDashboardData } from './hooks/useDashboardData';
-import { useCalendarViewData } from './hooks/useCalendarViewData';
+import { BackendDataProvider } from './contexts/BackendDataContext';
+import { useBackendDashboard } from './hooks/useBackendDashboard';
+import { useBackendCalendar } from './hooks/useBackendCalendar';
 
 function AppContent() {
   const navigate = useNavigate();
   const { enabled, intervalSeconds } = useAutoRotation();
 
-  // Use shared data context (no duplicate API calls)
+  // Use backend data context
   const {
     weekData,
     availableUnits,
     loading,
     error,
     configValid,
-  } = useDashboardData();
+  } = useBackendDashboard();
 
   const { width, height } = useWindowSize();
   const [showConfetti, setShowConfetti] = useState(false);
@@ -116,36 +116,15 @@ function AppContent() {
           path="/"
           element={
             <>
-              {/* Configuration error */}
-              {!configValid && (
-                <div className="h-screen w-screen flex items-center justify-center bg-[#ecf0f1]">
-                  <div className="max-w-2xl p-8 bg-white rounded-lg shadow-lg">
-                    <h2 className="text-2xl font-bold text-[#e74c3c] mb-4">
-                      ⚠️ Configuração Incompleta
-                    </h2>
-                    <p className="text-[#2C3E50] mb-4">
-                      Configure as variáveis de ambiente no arquivo <code className="px-2 py-1 bg-gray-100 rounded">.env</code>:
-                    </p>
-                    <ul className="list-disc list-inside text-[#2C3E50] mb-4 space-y-2">
-                      <li><code>VITE_STAYS_CLIENT_ID</code></li>
-                      <li><code>VITE_STAYS_CLIENT_SECRET</code></li>
-                    </ul>
-                    <p className="text-sm text-gray-600">
-                      Use o arquivo <code>.env.example</code> como referência.
-                    </p>
-                  </div>
-                </div>
-              )}
-
               {/* Loading state */}
-              {configValid && loading && (
+              {loading && (
                 <>
                   <DashboardSkeleton />
                 </>
               )}
 
               {/* Error state */}
-              {configValid && !loading && error && (
+              {!loading && error && (
                 <div className="h-screen w-screen flex items-center justify-center bg-[#ecf0f1]">
                   <div className="max-w-2xl p-8 bg-white rounded-lg shadow-lg">
                     <h2 className="text-2xl font-bold text-[#e74c3c] mb-4">
@@ -153,7 +132,7 @@ function AppContent() {
                     </h2>
                     <p className="text-[#2C3E50] mb-4">{error}</p>
                     <p className="mb-4 text-sm text-gray-600">
-                      Verifique suas credenciais da API Stays e tente novamente.
+                      Verifique se a API backend está rodando e tente novamente.
                     </p>
                     <button
                       onClick={() => window.location.reload()}
@@ -166,7 +145,7 @@ function AppContent() {
               )}
 
               {/* Dashboard with data */}
-              {configValid && !loading && !error && (
+              {!loading && !error && (
                 <Dashboard
                   weekData={weekData}
                   variousUnits={availableUnits}
@@ -182,27 +161,7 @@ function AppContent() {
 }
 
 function CalendarRoute() {
-  const { units, loading, error, configValid } = useCalendarViewData();
-
-  // Configuration error
-  if (!configValid) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#ecf0f1]">
-        <div className="max-w-2xl p-8 bg-white rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-[#e74c3c] mb-4">
-            ⚠️ Configuração Incompleta
-          </h2>
-          <p className="text-[#2C3E50] mb-4">
-            Configure as variáveis de ambiente no arquivo <code className="px-2 py-1 bg-gray-100 rounded">.env</code>:
-          </p>
-          <ul className="list-disc list-inside text-[#2C3E50] mb-4 space-y-2">
-            <li><code>VITE_STAYS_CLIENT_ID</code></li>
-            <li><code>VITE_STAYS_CLIENT_SECRET</code></li>
-          </ul>
-        </div>
-      </div>
-    );
-  }
+  const { units, loading, error } = useBackendCalendar();
 
   // Loading state
   if (loading) {
@@ -236,11 +195,11 @@ function CalendarRoute() {
 function App() {
   return (
     <BrowserRouter>
-      <BookingDataProvider>
+      <BackendDataProvider>
         <AutoRotationProvider>
           <AppContent />
         </AutoRotationProvider>
-      </BookingDataProvider>
+      </BackendDataProvider>
     </BrowserRouter>
   );
 }

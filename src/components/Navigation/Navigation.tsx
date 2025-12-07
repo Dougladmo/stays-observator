@@ -1,12 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAutoRotation } from '@/contexts/AutoRotationContext';
-import { useBookingDataContext } from '@/contexts/BookingDataContext';
+import { useBackendData } from '@/contexts/BackendDataContext';
 
 export default function Navigation() {
   const location = useLocation();
   const { enabled, intervalSeconds, toggleEnabled, setInterval: setRotationInterval } = useAutoRotation();
-  const { lastFetchTime } = useBookingDataContext();
+  const { lastFetchTime } = useBackendData();
 
   // Format sync status
   const getSyncStatus = () => {
